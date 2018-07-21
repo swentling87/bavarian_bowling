@@ -29,9 +29,11 @@ class GamesController < ApplicationController
           player_frame_data = { player.name => [] }
           player.frames.order(:position).each do |frame|
             current_frame = [[frame.first_roll, frame.second_roll], [frame.score]]
-            current_frame.append(frame.third_roll) if frame.final_frame && current_frame.sum >= 10
+            current_frame.append(frame.third_roll) if frame.final_frame && current_frame.flatten.sum >= 10
             player_frame_data["#{player.name}"] += current_frame
           end
+          binding.pry
+          player_frame_data[:total] = player.frames.map(&:score).compact.sum
           frame_data << player_frame_data
         end
       process_response(!frame_data.empty?, frame_data)
@@ -56,23 +58,23 @@ class GamesController < ApplicationController
     }
     if @frame.first_roll.nil? && !previous_frame_exists?(@frame)
       @frame.update!(first_roll: @roll)
-      @frame.update!(strike: true) if @roll == 10 and return
+      @frame.update!(strike: true) if @roll == 10
     elsif !@frame.first_roll.nil? && !previous_frame_exists?(@frame)
       @frame.update!(second_roll: @roll)
-      @frame.update!(spare: true) if @roll || ( @frame.first_roll + @roll ) == 10
+      @frame.update!(spare: true) if @roll == 10 || @frame.first_roll + @roll == 10
       @frame.update!(score: @frame.first_roll + @roll) if !@frame.spare
     elsif @frame.first_roll.nil? && previous_frame_exists?(@frame)
       @frame.update!(first_roll: @roll)
       previous_frame_bonus(@frame, @roll)
       @frame.update!(strike: true) if @roll == 10
+    elsif (!@frame.first_roll.nil? && !@frame.second_roll.nil?) && (@frame.first_roll + @frame.second_roll >= 10) && @frame.final_frame
+      @frame.update!(third_roll: @roll, score: @roll + 10 )
+      previous_frame_bonus(@frame, @roll)
     elsif !@frame.first_roll.nil? && previous_frame_exists?(@frame)
       @frame.update!(second_roll: @roll)
       previous_frame_bonus(@frame, @roll)
-      @frame.update!(spare: true) if @roll || ( @frame.first_roll + @roll ) == 10
+      @frame.update!(spare: true) if @roll == 10 || ( @frame.first_roll + @roll ) == 10
       @frame.update!(score: @frame.first_roll + @roll) if !@frame.spare
-    elsif (!@frame.first_roll.nil? && !@frame.second_roll.nil?) && (@frame.first_roll + @frame.second_roll >= 10) && @frame.final_frame
-      @frame.update!(third_roll: @roll, score: @frame.third_roll + 10 )
-      previous_frame_bonus(@frame, @roll)
     end
     process_response(true, "Score recorded.")
   end
@@ -82,14 +84,14 @@ class GamesController < ApplicationController
   def previous_frame_bonus(frame, roll)
     if previous_frame_exists?(frame)
       previous = Frame.find_by(game_id: frame.game_id, player_id: frame.player_id, position: (frame.position - 1))
-      if previous.spare
+      if previous.spare && frame.second_roll.nil?
         previous.update!(score: roll + 10)
-      elsif previous.strike && !frame.first.nil? && frame.second_roll.nil?
+      elsif previous.strike && !frame.first_roll.nil? && !frame.second_roll.nil?
         previous.update!(score: 10 + frame.first_roll + roll)
         frame.update!(second_roll: roll)
       elsif previous_frame_exists?(previous)
         second_level_frame = Frame.find_by(game_id: previous.game_id, player_id: previous.player_id, position: (previous.position - 1))
-        second_level_frame.update!(score: 20 + roll) if second_level_frame.strike && previous.second_roll.strike
+        second_level_frame.update!(score: 20 + roll) if second_level_frame.strike && previous.strike
       elsif frame.final_frame
         frame.update!(score: frame.fire_roll + frame.second_roll + frame.third_roll)
       end

@@ -11,7 +11,7 @@ class GamesController < ApplicationController
         JSON.parse(params[:player_names]).split(",").each do |player_name|
           player = Player.create(name: player_name, game: @game)
           10.times do |i|
-            i == 10 ? Frame.create!(game: @game, player: player, position: i, final_frame: true) : Frame.create!(game: @game, player: player, position: i)
+            i == 10 ? Frame.create!(game: @game, player: player, position: i, final_frame: true) : Frame.create!(game: @game, player: player, position: i + 1)
           end
         end
       players = @game.players.map{ |player| { "#{player.name}": player.id } }
@@ -39,33 +39,42 @@ class GamesController < ApplicationController
   end
   
   # POST record bowling result from roll
-  # /record_roll?game_id=yyy&player_id=zzz&frame_number=aaa&roll_value=xxx
+  # Takes body as such: { game_id: www, player_id: xxx, frame_number: yyy, roll_value: zzz }
+  # /record_roll
   def record_roll
-    @game = Game.find(params[:game_id])
-    roll = params[:roll_value]
-    frame = @game.players.find(player_id).frames.find_by(position: frame_number)
-    case frame
-    when frame.first_roll.nil? && !previous_frame_exists?(frame)
-      frame.update!(first_roll: roll)
-      frame.update!(strike: true) if roll == 10
-    when !frame.first_roll.nil? && !previous_frame_exists?(frame)
-      frame.update!(second_roll: roll)
-      frame.update!(spare: true) if roll || ( frame.first_roll + roll ) == 10
-      frame.update!(score: frame.first_roll + roll) if !frame.spare
-    when frame.first_roll.nil? && previous_frame_exists?(frame)
-      frame.update!(first_roll: roll)
-      previous_frame_bonus(frame, roll)
-      frame.update!(strike: true) if roll == 10
-    when !frame.first_roll.nil? && previous_frame_exists?(frame)
-      frame.update!(second_roll: roll)
-      previous_frame_bonus(frame, roll)
-      frame.update!(spare: true) if roll || ( frame.first_roll + roll ) == 10
-      frame.update!(score: frame.first_roll + roll) if !frame.spare
-    when (frame.first_roll + frame.second_roll >= 10) && frame.final_frame
-      frame.update!(third_roll: roll, score: frame.third_roll + 10 )
-      previous_frame_bonus(frame, roll)
+    params_check(params[:game_id]) {
+      @game = Game.find(params[:game_id])
+    }
+    params_check(params[:roll_value]) {
+      @roll = params[:roll_value].to_i
+    }
+    params_check(params[:player_id]) {
+      @player = @game.players.find(params[:player_id])
+    }
+    params_check(params[:frame_number]) {
+      @frame = @player.frames.find_by(position: params[:frame_number])
+    }
+    if @frame.first_roll.nil? && !previous_frame_exists?(@frame)
+      @frame.update!(first_roll: @roll)
+      @frame.update!(strike: true) if @roll == 10 and return
+    elsif !@frame.first_roll.nil? && !previous_frame_exists?(@frame)
+      @frame.update!(second_roll: @roll)
+      @frame.update!(spare: true) if @roll || ( @frame.first_roll + @roll ) == 10
+      @frame.update!(score: @frame.first_roll + @roll) if !@frame.spare
+    elsif @frame.first_roll.nil? && previous_frame_exists?(@frame)
+      @frame.update!(first_roll: @roll)
+      previous_frame_bonus(@frame, @roll)
+      @frame.update!(strike: true) if @roll == 10
+    elsif !@frame.first_roll.nil? && previous_frame_exists?(@frame)
+      @frame.update!(second_roll: @roll)
+      previous_frame_bonus(@frame, @roll)
+      @frame.update!(spare: true) if @roll || ( @frame.first_roll + @roll ) == 10
+      @frame.update!(score: @frame.first_roll + @roll) if !@frame.spare
+    elsif (!@frame.first_roll.nil? && !@frame.second_roll.nil?) && (@frame.first_roll + @frame.second_roll >= 10) && @frame.final_frame
+      @frame.update!(third_roll: @roll, score: @frame.third_roll + 10 )
+      previous_frame_bonus(@frame, @roll)
     end
-    process_response(@game.exists?, "Score recoreded.")
+    process_response(true, "Score recorded.")
   end
   
   private
@@ -89,9 +98,5 @@ class GamesController < ApplicationController
   
   def previous_frame_exists?(frame)
     (frame.position - 1) > 0
-  end
-  
-  def roll_attributes
-    params.require(:game_id, :player_id, :roll_value)
   end
 end

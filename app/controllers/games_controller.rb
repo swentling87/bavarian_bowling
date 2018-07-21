@@ -56,13 +56,18 @@ class GamesController < ApplicationController
     params_check(params[:frame_number]) {
       @frame = @player.frames.find_by(position: params[:frame_number])
     }
-    if @frame.first_roll.nil? && !previous_frame_exists?(@frame)
+    
+    if @frame.strike
+      return process_response(false)
+    elsif @frame.first_roll.nil? && !previous_frame_exists?(@frame)
       @frame.update!(first_roll: @roll)
       @frame.update!(strike: true) if @roll == 10
     elsif !@frame.first_roll.nil? && !previous_frame_exists?(@frame)
       @frame.update!(second_roll: @roll)
       @frame.update!(spare: true) if @roll == 10 || @frame.first_roll + @roll == 10
       @frame.update!(score: @frame.first_roll + @roll) if !@frame.spare
+    elsif previous_frame_exists?(@frame)
+      process_response(true, "Score recorded.")
     elsif @frame.first_roll.nil? && previous_frame_exists?(@frame)
       @frame.update!(first_roll: @roll)
       previous_frame_bonus(@frame, @roll)
@@ -97,7 +102,7 @@ class GamesController < ApplicationController
       end
     end
   end
-  
+      
   def previous_frame_exists?(frame)
     (frame.position - 1) > 0
   end

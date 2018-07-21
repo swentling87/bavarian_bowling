@@ -1,7 +1,7 @@
 module ResponseHandler
   extend ActiveSupport::Concern
   
-  def process_response(response_bool, response_string)
+  def process_response(response_bool, response_string="")
     if response_bool
       return render(json: { status: "ok", message: response_string }.to_json)
     else

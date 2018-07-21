@@ -6,7 +6,7 @@ class CreateFrames < ActiveRecord::Migration[5.2]
       t.integer :first_roll
       t.integer :second_roll
       t.integer :third_roll
-      t.integer :score
+      t.integer :score, default: 0
       t.boolean :strike
       t.boolean :spare
       t.boolean :final_frame

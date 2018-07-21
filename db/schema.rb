@@ -15,9 +15,12 @@ ActiveRecord::Schema.define(version: 2018_07_21_065832) do
   create_table "frames", force: :cascade do |t|
     t.integer "player_id"
     t.integer "game_id"
-    t.integer "first"
-    t.integer "second"
-    t.integer "third"
+    t.integer "first_roll"
+    t.integer "second_roll"
+    t.integer "third_roll"
+    t.integer "score", default: 0
+    t.boolean "strike"
+    t.boolean "spare"
     t.boolean "final_frame"
     t.integer "position"
     t.datetime "created_at", null: false

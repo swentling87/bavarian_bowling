@@ -13,3 +13,18 @@
  *= require_tree .
  *= require_self
  */
+body {
+  font-family: 'Poiret One', cursive;
+}
+.header {
+  background-color: green;
+}
+.headline {
+  font-family: 'Poiret One', cursive;
+  color: white;
+}
+
+.dividing_hr {
+  margin: 10px 0px;
+  border-top: 2px solid #eee;
+}

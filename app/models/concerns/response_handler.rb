@@ -1,9 +1,9 @@
 module ResponseHandler
   extend ActiveSupport::Concern
   
-  def process_response(response_bool, response_string="")
+  def process_response(response_bool, response_string="", *args)
     if response_bool
-      return render(json: { status: "ok", message: response_string }.to_json)
+      return render(json: { status: "ok", message: response_string, optional: args }.to_json)
     else
       return render(json: { status: "bad", message: "There was a problem processing your request." }.to_json, status: :bad_request)
     end
@@ -14,7 +14,7 @@ module ResponseHandler
     if !args.include?(nil)
       yield
     else
-      render(json: { status: "bad", message: "There was a problem processing your request." }.to_json, status: :bad_request ) and return
+      render(json: { status: "bad", message: "There was a problem processing your request, please check your parameters." }.to_json, status: :bad_request ) and return
     end
   end
 end

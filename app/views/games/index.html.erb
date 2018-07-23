@@ -1,0 +1,40 @@
+<section class="header">
+  <div class="container">
+    <div class="row">
+      <h2 class="headline">Bavarian Bowling API</h2>
+    </div>
+  </div>
+</section>
+<hr class="dividing_hr" />
+<section>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <div>
+          <h2>Start A Game</h2>
+          <h4>Url: <small>POST /new_game</small></h4>
+          <h4>Payload: <small>{"Bob,Susie,Daniel"}</small></h4>
+          <p>Should be a comma separated list of names.</p>
+          <h4>Output: <small>{"status": "ok", "message": "Congratulations, you started a new game. Here's your game id: 16 and player data: [{:bob=>25}, {:susie=>26}, {:daniel=>27}]","optional": [58]}</small></h4>
+          <p>Returns a string of data as well as the game id available in the optional array.</p>
+        </div>
+        <hr class="dividing_hr" />
+        <div>
+          <h2>Get Game Data</h2>
+          <h4>Url: <small>GET /game_data?game_id=16</small></h4>
+          <h4>Output: <small>{"status":"ok","message":[{"Bob":[[5,4],[9],[7,3],[14],[4,5],[9],[null,null],[0],[null,null],[0],[null,null],[0],[null,null],[0],[null,null],[0],[null,null],[0],[null,null],[0]],"total":32},{"Susie":...,"optional":[]}</small></h4>
+          <p>Returns in the message body an array of hashes containing the data for the current players formatted with an array of their current frame and then the score for that frame which is updated on the frame conclusion and finally a total value for that player.</p>
+        </div>
+        <hr class="dividing_hr" />
+        <div>
+          <h2>Record a Roll</h2>
+          <h4>Url: <small>GET /record_roll</small></h4>
+          <h4>Payload: <small>{ game_id: 16, player_id: 12, frame_number: 1, roll_value: 9 }</small></h4>
+          <p>The body should contain the above listed data points otherwise it will not post properly and will return a 400 error.</p>
+          <h4>Output: <small>{"status":"ok","message":"Score recorded.","optional":[]}</small></h4>
+          <p>This will simply return a message that the score was recorded if successful.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

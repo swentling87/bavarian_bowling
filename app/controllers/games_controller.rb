@@ -8,14 +8,14 @@ class GamesController < ApplicationController
   def new_game
     params_check(params[:player_names]) {
         @game = Game.create
-        JSON.parse(params[:player_names]).split(",").each do |player_name|
+        params[:player_names].split(",").each do |player_name|
           player = Player.create(name: player_name, game: @game)
           10.times do |i|
             i == 10 ? Frame.create!(game: @game, player: player, position: i, final_frame: true) : Frame.create!(game: @game, player: player, position: i + 1)
           end
         end
       players = @game.players.map{ |player| { "#{player.name}": player.id } }
-      process_response(@game.present?, "Congratulations, you started a new game. Here's your game id: #{@game.id} and player data: #{players}")
+      process_response(@game.present?, "Congratulations, you started a new game. Here's your game id: #{@game.id} and player data: #{players}", @game.id)
     }
   end
   
@@ -54,14 +54,14 @@ class GamesController < ApplicationController
         return process_response(false)
       end
       
-      # Return bad request if trying to enter a roll value larger than 10
-      if @roll > 10
+      # Return bad request if trying to enter a roll value larger than 10 or two values larger than 10
+      if @roll > 10 || ((!@frame.final_frame && @frame.first_roll) && @frame.first_roll + @roll > 10)
         return process_response(false)
       end
       
       if @frame.first_roll.nil?
         process_first_roll
-      elsif (!@frame.first_roll.nil? && !@frame.second_roll.nil?) && (@frame.first_roll + @frame.second_roll >= 10) && @frame.final_frame
+      elsif (@frame.first_roll && @frame.second_roll) && (@frame.first_roll + @frame.second_roll >= 10) && @frame.final_frame
         @frame.third_roll = @roll
         @frame.score =  @roll + @frame.first_roll + @frame.second_roll
       elsif !@frame.first_roll.nil?
